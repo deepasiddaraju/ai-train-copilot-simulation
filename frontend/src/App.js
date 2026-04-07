@@ -1,23 +1,28 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
 
 function App() {
+  const [train, setTrain] = useState(null);
+
+  
+
+  useEffect(() => {
+  const interval = setInterval(() => {
+    fetch("http://127.0.0.1:5000/api/train_status")
+      .then(res => res.json())
+      .then(data => setTrain(data));
+  }, 2000); // refresh every 2 seconds
+  return () => clearInterval(interval);
+}, []);
+
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <h1>AI Co-Pilot Dashboard</h1>
+      {train ? (
+        <p>Train {train.train_id} → Speed: {train.speed} km/h, Position: {train.position}</p>
+      ) : (
+        <p>Loading train data...</p>
+      )}
     </div>
   );
 }

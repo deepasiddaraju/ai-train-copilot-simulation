@@ -1,13 +1,27 @@
-from flask import Flask
-from flask_socketio import SocketIO
+import threading
+
+from flask import Flask, jsonify
+from flask_cors import CORS
+from train import Train
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+CORS(app)  # allow requests from React frontend
 
-@app.route("/")
-def home():
-    return "AI Co-Pilot Backend Running"
+train1 = Train(train_id=1, speed=50)
+def run_train():
+    train1.move()
+
+threading.Thread(target=run_train, daemon=True).start()
+
+@app.route("/api/train_status")
+def train_status():
+    return jsonify({
+        "train_id": train1.train_id,
+        "speed": train1.speed,
+        "position": train1.position,
+        "status": train1.status
+    })
+
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    app.run(debug=True)
