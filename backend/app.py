@@ -1,27 +1,43 @@
-import threading
-
 from flask import Flask, jsonify
-from flask_cors import CORS
+from flask_socketio import SocketIO
+import time, threading
 from train import Train
 
 app = Flask(__name__)
-CORS(app)  # allow requests from React frontend
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-train1 = Train(train_id=1, speed=50)
-def run_train():
-    train1.move()
-
-threading.Thread(target=run_train, daemon=True).start()
+# Create multiple trains
+trains = [
+    Train(train_id=1, speed=50),
+    Train(train_id=2, speed=40),
+    Train(train_id=3, speed=60)
+]
 
 @app.route("/api/train_status")
 def train_status():
-    return jsonify({
-        "train_id": train1.train_id,
-        "speed": train1.speed,
-        "position": train1.position,
-        "status": train1.status
-    })
+    return jsonify([{
+        "train_id": train.train_id,
+        "speed": train.speed,
+        "position": train.position,
+        "status": train.status
+    } for train in trains])
 
+def run_trains():
+    while True:
+        updates = []
+        for train in trains:
+            train.position += train.speed * 0.1
+            updates.append({
+                "train_id": train.train_id,
+                "speed": train.speed,
+                "position": train.position,
+                "status": train.status
+            })
+        socketio.emit("train_update", updates)
+        time.sleep(2)
+
+threading.Thread(target=run_trains, daemon=True).start()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    socketio.run(app, debug=True)
